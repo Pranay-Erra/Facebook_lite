@@ -7,17 +7,21 @@ const FacebookLite = () => {
   const [feeds, setFeeds] = useState([]);
   const [newFeed, setNewFeed] = useState("");
   const [editingIndex, setEditingIndex] = useState(null);
+  const [image, setImage] = useState(null);
 
   const handlePost = () => {
-    if (!newFeed.trim()) return;
+    if (!newFeed.trim() && !image) return;
     const updatedFeeds = [...feeds];
-    if (editingIndex !== null) updatedFeeds[editingIndex].text = newFeed;
-    else updatedFeeds.unshift({ text: newFeed, likes: 0, date: new Date().toLocaleString() });
+    if (editingIndex !== null) {
+      updatedFeeds[editingIndex] = { ...updatedFeeds[editingIndex], text: newFeed, image };
+    } else {
+      updatedFeeds.unshift({ text: newFeed, image, likes: 0, date: new Date().toLocaleString() });
+    }
     setFeeds(updatedFeeds);
     setNewFeed("");
+    setImage(null);
     setEditingIndex(null);
   };
-  
 
   const handleAction = (index, action) => {
     const updatedFeeds = [...feeds];
@@ -25,19 +29,32 @@ const FacebookLite = () => {
     else if (action === "dislike") updatedFeeds[index].likes -= 1;
     else if (action === "edit") {
       setNewFeed(updatedFeeds[index].text);
+      setImage(updatedFeeds[index].image);
       setEditingIndex(index);
       return;
     } else updatedFeeds.splice(index, 1);
     setFeeds(updatedFeeds);
   };
 
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setImage(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div className="container mt-4">
       <Form.Control as="textarea" value={newFeed} onChange={(e) => setNewFeed(e.target.value)} placeholder="Write a new feed..." />
+      <Form.Control type="file" className="mt-2" accept="image/*" onChange={handleImageUpload} />
+      {image && <img src={image} alt="Preview" className="mt-2" style={{ maxWidth: "300px", height: "auto", borderRadius: "5px" }} />}
       <Button className="mt-2" onClick={handlePost}>{editingIndex !== null ? "Update" : "Post"}</Button>
       {feeds.map((feed, index) => (
         <Card key={index} className="mt-3 p-3">
           <Card.Body>
+            {feed.image && <img src={feed.image} alt="Post" className="mb-2" style={{ maxWidth: "300px", height: "auto", borderRadius: "5px" }} />}
             <Card.Text>{feed.text}</Card.Text>
             <small className="text-muted">{feed.date}</small>
             <div className="mt-2 d-flex gap-2">
